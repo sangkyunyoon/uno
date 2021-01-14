@@ -148,7 +148,10 @@ namespace Windows.UI.Xaml.Controls
 
 		internal void Cancel()
 		{
-			_picker?.SetDate(_initialValue, false);
+			if (_initialValue is {} initialDate)
+			{
+				_picker?.SetDate(initialDate, false);
+			}
 			_picker?.EndEditing(false);
 		}
 
@@ -193,7 +196,14 @@ namespace Windows.UI.Xaml.Controls
 			}
 			else
 			{
-				_picker.PreferredDatePickerStyle = UIDatePickerStyle.Wheels;
+				try
+				{
+					_picker.PreferredDatePickerStyle = UIDatePickerStyle.Wheels;
+				}
+				catch (MonoTouchException ex)
+				{
+					this.Log().Error("UpdatePickerStyle() error", ex);
+				}
 			}
 		}
 	}
