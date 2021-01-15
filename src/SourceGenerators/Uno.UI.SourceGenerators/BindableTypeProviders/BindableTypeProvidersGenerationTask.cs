@@ -51,46 +51,48 @@ namespace Uno.UI.SourceGenerators.BindableTypeProviders
 
 		public void Initialize(GeneratorInitializationContext context)
 		{
+			DependenciesInitializer.Init(context);
 		}
 
 		public void Execute(GeneratorExecutionContext context)
 		{
-			DependenciesInitializer.Init(context);
-
 			try
 			{
+				var validPlatform = PlatformHelper.IsValidPlatform(context);
+				var designTime = DesignTimeHelper.IsDesignTime(context);
+				var isApplication = IsApplication(context);
 
-				if (PlatformHelper.IsValidPlatform(context)
-					&& !DesignTimeHelper.IsDesignTime(context))
+				if (validPlatform && !designTime && isApplication)
 				{
-					if (IsApplication(context))
-					{
-						_defaultNamespace = context.GetMSBuildPropertyValue("RootNamespace");
-						_namedSymbolsLookup = context.Compilation.GetSymbolNameLookup();
+					_defaultNamespace = context.GetMSBuildPropertyValue("RootNamespace");
+					_namedSymbolsLookup = context.Compilation.GetSymbolNameLookup();
 
-						_bindableAttributeSymbol = FindBindableAttributes(context);
-						_dependencyPropertySymbol = context.Compilation.GetTypeByMetadataName(XamlConstants.Types.DependencyProperty);
+					_bindableAttributeSymbol = FindBindableAttributes(context);
+					_dependencyPropertySymbol = context.Compilation.GetTypeByMetadataName(XamlConstants.Types.DependencyProperty);
 
-						_objectSymbol = context.Compilation.GetTypeByMetadataName("System.Object");
-						_javaObjectSymbol = context.Compilation.GetTypeByMetadataName("Java.Lang.Object");
-						_nsObjectSymbol = context.Compilation.GetTypeByMetadataName("Foundation.NSObject");
-						_stringSymbol = context.Compilation.GetTypeByMetadataName("System.String");
-						_nonBindableSymbol = context.Compilation.GetTypeByMetadataName("Windows.UI.Xaml.Data.NonBindableAttribute");
-						_resourceDictionarySymbol = context.Compilation.GetTypeByMetadataName("Windows.UI.Xaml.ResourceDictionary");
-						_currentModule = context.Compilation.SourceModule;
+					_objectSymbol = context.Compilation.GetTypeByMetadataName("System.Object");
+					_javaObjectSymbol = context.Compilation.GetTypeByMetadataName("Java.Lang.Object");
+					_nsObjectSymbol = context.Compilation.GetTypeByMetadataName("Foundation.NSObject");
+					_stringSymbol = context.Compilation.GetTypeByMetadataName("System.String");
+					_nonBindableSymbol = context.Compilation.GetTypeByMetadataName("Windows.UI.Xaml.Data.NonBindableAttribute");
+					_resourceDictionarySymbol = context.Compilation.GetTypeByMetadataName("Windows.UI.Xaml.ResourceDictionary");
+					_currentModule = context.Compilation.SourceModule;
 
-						AnalyzerSuppressions = new string[0];
+					AnalyzerSuppressions = new string[0];
 
-						var modules = from ext in context.Compilation.ExternalReferences
-									  let sym = context.Compilation.GetAssemblyOrModuleSymbol(ext) as IAssemblySymbol
-									  where sym != null
-									  from module in sym.Modules
-									  select module;
+					var modules = from ext in context.Compilation.ExternalReferences
+									let sym = context.Compilation.GetAssemblyOrModuleSymbol(ext) as IAssemblySymbol
+									where sym != null
+									from module in sym.Modules
+									select module;
 
-						modules = modules.Concat(context.Compilation.SourceModule);
+					modules = modules.Concat(context.Compilation.SourceModule);
 
-						context.AddSource("BindableMetadata", GenerateTypeProviders(modules));
-					}
+					context.AddSource("BindableMetadata", GenerateTypeProviders(modules));
+				}
+				else
+				{
+					context.AddSource("BindableMetadata", $"// validPlatform: {validPlatform} designTime:{designTime} isApplication:{isApplication}");
 				}
 			}
 			catch(Exception e)

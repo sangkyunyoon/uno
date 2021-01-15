@@ -1,6 +1,6 @@
 ﻿#nullable enable
 
-#if NETSTANDARD
+#if UNO_REFERENCE_API
 #define USE_HARD_REFERENCES
 #endif
 
@@ -36,7 +36,6 @@ using View = AppKit.NSView;
 using ViewGroup = AppKit.NSView;
 using Color = AppKit.NSColor;
 using Font = AppKit.NSFont;
-using Windows.UI.Xaml.Controls;
 using DependencyObject = System.Object;
 using AppKit;
 #elif METRO

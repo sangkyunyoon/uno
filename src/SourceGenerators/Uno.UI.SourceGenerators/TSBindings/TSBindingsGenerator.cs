@@ -39,12 +39,11 @@ namespace Uno.UI.SourceGenerators.TSBindings
 
 		public void Initialize(GeneratorInitializationContext context)
 		{
+			DependenciesInitializer.Init(context);
 		}
 
 		public void Execute(GeneratorExecutionContext context)
 		{
-			DependenciesInitializer.Init(context);
-
 			if (!DesignTimeHelper.IsDesignTime(context))
 			{
 				_bindingsPaths = context.GetMSBuildPropertyValue("TSBindingsPath")?.ToString();
