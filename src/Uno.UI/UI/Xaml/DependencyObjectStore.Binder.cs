@@ -456,7 +456,7 @@ namespace Windows.UI.Xaml
 
 		internal void RegisterDefaultValueProvider(DefaultValueProvider provider)
 		{
-
+			_properties.RegisterDefaultValueProvider(provider);
 		}
 
 		/// <summary>
