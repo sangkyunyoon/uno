@@ -9,6 +9,7 @@ using Uno.Diagnostics.Eventing;
 using Windows.UI.Xaml.Markup;
 using System.Threading;
 using Windows.UI.Core;
+using Uno.Disposables;
 
 namespace Windows.UI.Xaml.Media.Animation
 {
@@ -32,6 +33,7 @@ namespace Windows.UI.Xaml.Media.Animation
 		private int _replayCount = 1;
 		private int _runningChildren = 0;
 		private bool _hasFillingChildren = false;
+		private Dictionary<ITimeline, IDisposable> _childrenSubscriptions = new Dictionary<ITimeline, IDisposable>();
 
 		public Storyboard()
 		{
@@ -67,6 +69,19 @@ namespace Windows.UI.Xaml.Media.Animation
 		/// evaluation of the target element.
 		/// </summary>
 		public static void SetTarget(Timeline timeline, ElementNameSubject target) => timeline.SetElementNameTarget(target);
+
+		/// <summary>
+		/// Disposes event subscriptions for an <see cref="ITimeline"/>
+		/// </summary>
+		/// <param name="child"></param>
+		private void DisposeChildRegistrations(ITimeline child)
+		{
+			if(_childrenSubscriptions.TryGetValue(child, out var disposable))
+			{
+				disposable.Dispose();
+				_childrenSubscriptions.Remove(child);
+			}
+		}
 
 		/// <summary>
 		/// Replay this animation.
@@ -108,6 +123,16 @@ namespace Windows.UI.Xaml.Media.Animation
 				{
 					_runningChildren++;
 					child.Completed += Child_Completed;
+					child.Failed += Child_Failed;
+
+					_childrenSubscriptions.Add(
+						child,
+						Disposable.Create(() => {
+							child.Completed -= Child_Completed;
+							child.Failed -= Child_Failed;
+						})
+					);
+
 					child.Begin();
 				}
 			}
@@ -142,7 +167,7 @@ namespace Windows.UI.Xaml.Media.Animation
 				foreach (ITimeline child in Children)
 				{
 					child.Stop();
-					child.Completed -= Child_Completed;
+					DisposeChildRegistrations(child);
 				}
 			}
 			_runningChildren = 0;
@@ -236,7 +261,7 @@ namespace Windows.UI.Xaml.Media.Animation
 				foreach (ITimeline child in Children)
 				{
 					child.Deactivate();
-					child.Completed -= Child_Completed;
+					DisposeChildRegistrations(child);
 				}
 
 				_runningChildren = 0;
@@ -283,6 +308,22 @@ namespace Windows.UI.Xaml.Media.Animation
 			throw new NotImplementedException();
 		}
 
+		private void Child_Failed(object sender, object e)
+		{
+			if (!(sender is Timeline child))
+			{
+				return;
+			}
+
+			DisposeChildRegistrations(child);
+
+			Interlocked.Decrement(ref _runningChildren);
+			_hasFillingChildren |= (child.FillBehavior != FillBehavior.Stop);
+
+			// OnFailed is not called here because it relates to an individual
+			// child, where completed relates to all children being completed.
+		}
+
 		private void Child_Completed(object sender, object e)
 		{
 			if (!(sender is Timeline child))
@@ -290,7 +331,7 @@ namespace Windows.UI.Xaml.Media.Animation
 				return;
 			}
 
-			child.Completed -= Child_Completed;
+			DisposeChildRegistrations(child);
 
 			Interlocked.Decrement(ref _runningChildren);
 			_hasFillingChildren |= (child.FillBehavior != FillBehavior.Stop);
