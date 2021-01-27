@@ -515,13 +515,11 @@ namespace Windows.UI.Xaml
 			{
 				if(args.NewValue is IDependencyObjectStoreProvider provider)
 				{
-					
 					_childrenBindable[GetOrCreateChildBindablePropertyIndex(propertyDetails.Property)] = 
 						provider.Store.Parent != ActualInstance ? args.NewValue : null;
 				}
 				else
 				{
-					
 					_childrenBindable[GetOrCreateChildBindablePropertyIndex(propertyDetails.Property)] = args.NewValue;
 				}
 			}
