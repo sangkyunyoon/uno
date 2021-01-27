@@ -84,7 +84,6 @@ namespace Windows.UI.Xaml
 
 				_properties.ApplyTemplatedParent(templatedParent);
 
-				
 				ApplyChildrenBindable(templatedParent, isTemplatedParent: true);
 			}
 #if !HAS_EXPENSIVE_TRYFINALLY
@@ -110,7 +109,6 @@ namespace Windows.UI.Xaml
 			}
 			for (int i = 0; i < _childrenBindable.Count; i++)
 			{
-
 				var child = _childrenBindable[i];
 				var parent = child?.GetParent();
 
