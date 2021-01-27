@@ -15,6 +15,8 @@ using System.Globalization;
 using System.Threading;
 using Uno.Diagnostics.Eventing;
 using System.Collections;
+using Windows.UI.Xaml.Controls;
+using System.Diagnostics;
 
 #if !NET461
 using Uno.UI.Controls;
@@ -82,6 +84,7 @@ namespace Windows.UI.Xaml
 
 				_properties.ApplyTemplatedParent(templatedParent);
 
+				
 				ApplyChildrenBindable(templatedParent, isTemplatedParent: true);
 			}
 #if !HAS_EXPENSIVE_TRYFINALLY
@@ -105,10 +108,22 @@ namespace Windows.UI.Xaml
 					provider.Store.SetInheritedDataContext(inheritedValue);
 				}
 			}
-
 			for (int i = 0; i < _childrenBindable.Count; i++)
 			{
+
 				var child = _childrenBindable[i];
+				var parent = child?.GetParent();
+
+				//Do not propagate value if you are not this child's parent
+				//Covers case where a child may hold a binding to a view higher up the tree
+				//Example: Button A contains a Flyout with Button B inside of it
+				//	Button B has a binding to the Flyout itself
+				//	We should not propagate Button B's DataContext to the Flyout
+				//	since its real parent is actually Button A 
+				if (parent != null && parent != ActualInstance)
+				{
+					continue;
+				}
 
 				if (child is IDependencyObjectStoreProvider provider)
 				{
@@ -502,11 +517,13 @@ namespace Windows.UI.Xaml
 			{
 				if(args.NewValue is IDependencyObjectStoreProvider provider)
 				{
+					
 					_childrenBindable[GetOrCreateChildBindablePropertyIndex(propertyDetails.Property)] = 
 						provider.Store.Parent != ActualInstance ? args.NewValue : null;
 				}
 				else
 				{
+					
 					_childrenBindable[GetOrCreateChildBindablePropertyIndex(propertyDetails.Property)] = args.NewValue;
 				}
 			}
