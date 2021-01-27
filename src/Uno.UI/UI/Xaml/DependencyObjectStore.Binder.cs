@@ -15,8 +15,6 @@ using System.Globalization;
 using System.Threading;
 using Uno.Diagnostics.Eventing;
 using System.Collections;
-using Windows.UI.Xaml.Controls;
-using System.Diagnostics;
 
 #if !NET461
 using Uno.UI.Controls;
